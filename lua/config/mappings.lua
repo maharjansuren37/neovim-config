@@ -4,75 +4,119 @@
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
-local function map(m, k, v) -- helper function for mode, key you press, cmd/action
-    vim.keymap.set(m, k, v, { noremap = true, silent = true })
+local function map(m, k, v, desc) -- helper: mode, key you press, cmd/action
+	vim.keymap.set(m, k, v, { noremap = true, silent = true, desc = desc })
 end
 
 -- disable space's normal function
 map("", "<space>", "<Nop>")
 
-map("n", "<leader>cd", vim.cmd.Ex)
+-- ── saving / quitting ────────────────────────────────────────────────────────
+map({ "n", "v" }, "<C-s>", "<cmd>write<CR>", "save file")
+map("i", "<C-s>", "<cmd>write<CR>", "save file") -- stays in insert, like every other editor
+map("n", "<Esc>", "<cmd>nohlsearch<CR>", "clear search highlight")
 
--- buffers
-map("n", "<S-l>", ":bnext<CR>")
-map("n", "<S-h>", ":bprevious<CR>")
-map("n", "<leader>q", ":bdelete<CR>")
-map("n", "<leader>Q", ":bdelete!<CR>")
-map("n", "<leader>U", ":bufdo bd<CR>") --close all
-map("n", "<leader>vs", ":vsplit<CR>:bnext<CR>") --ver split + open next buffer
-map("n", "<leader>w", "<C-w>w")
-map("n", "<leader>W", function() vim.opt.wrap = not vim.opt.wrap:get() end) --toggle wrap
+-- ── buffers & windows ────────────────────────────────────────────────────────
+map("n", "<S-l>", ":bnext<CR>", "next buffer")
+map("n", "<S-h>", ":bprevious<CR>", "prev buffer")
+map("n", "<leader>q", ":bdelete<CR>", "close buffer")
+-- everything that can lose work lives behind <leader>b, so a slipped shift key
+-- can't turn "open the url under the cursor" into "throw away every buffer"
+map("n", "<leader>bn", ":enew<CR>", "new empty buffer")
+map("n", "<leader>bd", ":bdelete<CR>", "close buffer")
+map("n", "<leader>bD", ":bdelete!<CR>", "close buffer (discard changes)")
+map("n", "<leader>bo", ":%bdelete|edit #|bdelete #<CR>", "close other buffers")
+map("n", "<leader>bX", ":bufdo bd<CR>", "close all buffers")
+map("n", "<leader>vs", ":vsplit<CR>", "vsplit")
+map("n", "<leader>w", "<C-w>w", "cycle windows")
+map("n", "<leader>W", function() vim.opt.wrap = not vim.opt.wrap:get() end, "toggle wrap")
 
--- fzf and grep
-map("n", "<leader>f", ":lua require('fzf-lua').files()<CR>") --search cwd
-map("n", "<leader>Fh", ":lua require('fzf-lua').files({ cwd = '~/' })<CR>") --search home
-map("n", "<leader>Fc", ":lua require('fzf-lua').files({ cwd = '~/.config' })<CR>") --search .config
-map("n", "<leader>Fl", ":lua require('fzf-lua').files({ cwd = '~/.local/src' })<CR>") --search .local/src
-map("n", "<leader>Ff", ":lua require('fzf-lua').files({ cwd = '..' })<CR>") --search above
-map("n", "<leader>Fr", ":lua require('fzf-lua').resume()<CR>") --last search
-map("n", "<leader>g", ":lua require('fzf-lua').grep()<CR>") --grep
-map("n", "<leader>G", ":lua require('fzf-lua').grep_cword()<CR>") --grep word under cursor
+-- window nav without the <C-w> prefix
+map("n", "<C-h>", "<C-w>h", "window left")
+map("n", "<C-j>", "<C-w>j", "window down")
+map("n", "<C-k>", "<C-w>k", "window up")
+map("n", "<C-l>", "<C-w>l", "window right")
 
--- misc
-map("n", "<leader>t", ":NvimTreeToggle<CR>") --open file explorer
-map("n", "<leader>P", ":PlugInstall<CR>") --vim-plug
+-- ── movement quality of life ─────────────────────────────────────────────────
+map("n", "<C-d>", "<C-d>zz", "half page down, centered")
+map("n", "<C-u>", "<C-u>zz", "half page up, centered")
+map("n", "n", "nzzzv", "next match, centered")
+map("n", "N", "Nzzzv", "prev match, centered")
+-- move by screen line when wrapped (matters in prose/notes)
+vim.keymap.set({ "n", "v" }, "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
+vim.keymap.set({ "n", "v" }, "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 
-map("n", "<leader>p", function() --toggle light/dark background
+-- ── visual mode ──────────────────────────────────────────────────────────────
+map("v", "<", "<gv", "outdent, keep selection")
+map("v", ">", ">gv", "indent, keep selection")
+map("v", "J", ":m '>+1<CR>gv=gv", "move selection down")
+map("v", "K", ":m '<-2<CR>gv=gv", "move selection up")
+map("x", "p", '"_dP', "paste without clobbering register")
+
+-- ── fzf: find things ─────────────────────────────────────────────────────────
+local function fzf(fn, opts)
+	return function() require("fzf-lua")[fn](opts) end
+end
+
+map("n", "<leader>f", fzf("files"), "find files (cwd)")
+map("n", "<leader><leader>", fzf("buffers"), "switch buffer")
+map("n", "<leader>g", fzf("live_grep"), "grep (cwd)")
+map("n", "<leader>G", fzf("grep_cword"), "grep word under cursor")
+map("v", "<leader>g", fzf("grep_visual"), "grep selection")
+map("n", "<leader>Fh", fzf("files", { cwd = "~/" }), "find in home")
+map("n", "<leader>Fc", fzf("files", { cwd = "~/.config" }), "find in .config")
+map("n", "<leader>Fl", fzf("files", { cwd = "~/.local/src" }), "find in .local/src")
+map("n", "<leader>Ff", fzf("files", { cwd = ".." }), "find one dir up")
+map("n", "<leader>Fr", fzf("resume"), "resume last picker")
+map("n", "<leader>Fo", fzf("oldfiles"), "recent files")
+map("n", "<leader>Fb", fzf("blines"), "lines in buffer")
+map("n", "<leader>Fk", fzf("keymaps"), "keymaps")
+map("n", "<leader>?", fzf("keymaps"), "search keymaps")
+map("n", "<leader>FH", fzf("helptags"), "help tags")
+map("n", "<leader>Fd", fzf("diagnostics_workspace"), "workspace diagnostics")
+
+-- ── git ──────────────────────────────────────────────────────────────────────
+map("n", "<leader>T", fzf("git_status"), "git status")
+map("n", "<leader>hc", fzf("git_commits"), "git log (repo)")
+map("n", "<leader>hf", fzf("git_bcommits"), "git log (file)")
+
+-- ── misc ─────────────────────────────────────────────────────────────────────
+map("n", "<leader>t", ":NvimTreeToggle<CR>", "file explorer")
+map("n", "<leader>P", ":PlugInstall<CR>", "PlugInstall")
+
+map("n", "<leader>pt", function() --toggle light/dark background
 	vim.o.background = vim.o.background == "dark" and "light" or "dark"
-end)
+end, "toggle light/dark")
 
 map("n", "<leader>u", function() --open url/path under cursor
 	vim.ui.open(vim.fn.expand("<cWORD>"))
-end)
+end, "open url under cursor")
 
-map("n", "<leader>z", function() require("config.term").float() end) --floating terminal
-map("n", "<leader>H", function() require("config.term").float("htop") end) --htop terminal
+-- no <leader>p: clipboard=unnamedplus means plain `p` already pastes from the
+-- system clipboard, and it was shadowing <leader>pt behind timeoutlen
+-- ── files: create / rename / move / delete (see config.files) ───────────
 
-map("n", "<leader>x", function() --chmod +x current file
-	local f = vim.fn.expand("%:p")
-	if f ~= "" then
-		vim.fn.system({ "chmod", "+x", f })
-	end
-end)
+local file = function(fn, ...)
+	local args = { ... }
+	return function() require("config.files")[fn](unpack(args)) end
+end
 
-map("n", "<leader>d", function() --duplicate current file
-	local src = vim.fn.expand("%:p")
-	if src == "" then
-		return
-	end
-	local dir = vim.fn.expand("%:p:h")
-	local name = vim.fn.expand("%:t:r")
-	local ext = vim.fn.expand("%:e")
-	local suffix = ext ~= "" and ("." .. ext) or ""
-	local dest = dir .. "/" .. name .. "-copy" .. suffix
-	local i = 1
-	while vim.fn.filereadable(dest) == 1 do
-		dest = dir .. "/" .. name .. "-copy" .. i .. suffix
-		i = i + 1
-	end
-	vim.fn.writefile(vim.fn.readfile(src), dest)
-	vim.cmd.edit(vim.fn.fnameescape(dest))
-end)
+map("n", "<leader>on", file("new"), "new file")
+map("n", "<leader>oN", file("new_dir"), "new directory")
+map("n", "<leader>or", file("rename"), "rename file")
+map("n", "<leader>om", file("move"), "move file")
+map("n", "<leader>oc", file("duplicate"), "duplicate file")
+map("n", "<leader>oD", file("delete"), "delete file")
+map("n", "<leader>oy", file("copy_path", "relative"), "copy relative path")
+map("n", "<leader>oY", file("copy_path", "absolute"), "copy absolute path")
+map("n", "<leader>ot", file("copy_path", "name"), "copy file name")
+map("n", "<leader>od", file("copy_path", "dir"), "copy directory")
+map("n", "<leader>ox", file("chmod_x"), "chmod +x")
+map("n", "<leader>oe", file("reveal"), "reveal in file tree")
+map("n", "<leader>oo", file("open_external"), "open with desktop handler")
+
+map("n", "<leader>z", function() require("config.term").float() end, "floating terminal")
+map("n", "<leader>H", function() require("config.term").float("htop") end, "htop")
 
 map("n", "<leader>R", function() --reload config
 	for name in pairs(package.loaded) do
@@ -81,18 +125,26 @@ map("n", "<leader>R", function() --reload config
 		end
 	end
 	dofile(vim.env.MYVIMRC)
-end)
+	vim.notify("config reloaded")
+end, "reload config")
 
--- notes (plain markdown in ~/notes, see config.notes)
-map("n", "<leader>nf", function() require("config.notes").find() end) --find note
-map("n", "<leader>ng", function() require("config.notes").grep() end) --grep notes
-map("n", "<leader>nd", function() require("config.notes").daily() end) --today's daily note
-map("n", "<leader>nw", function() require("config.notes").new() end) --new note
+-- ── notes (plain markdown vault, see config.notes) ───────────────────────────
+local notes = function(fn)
+	return function() require("config.notes")[fn]() end
+end
 
--- git
-map("n", "<leader>T", function() require("fzf-lua").git_status() end) --git status
+map("n", "<leader>nf", notes("find"), "find note")
+map("n", "<leader>ng", notes("grep"), "grep notes")
+map("n", "<leader>nd", notes("daily"), "today's daily note")
+map("n", "<leader>ny", notes("yesterday"), "yesterday's daily note")
+map("n", "<leader>nw", notes("new"), "new note")
+map("n", "<leader>ni", notes("index"), "notes index")
+map("n", "<leader>nl", notes("link"), "insert link to note")
+map("n", "<leader>nt", notes("todos"), "open TODOs across notes")
+map("n", "<leader>nb", notes("backlinks"), "backlinks to this note")
+map("n", "<leader>nc", notes("toggle_checkbox"), "toggle checkbox")
 
-map("n", "<leader>nn", function() --toggle relative numbers (overrides dynamic auto-toggle in config.autocmd)
+map("n", "<leader>N", function() --toggle relative numbers (overrides the dynamic auto-toggle in config.autocmd)
 	vim.g.dynamic_relnum = not vim.g.dynamic_relnum
 	vim.opt.relativenumber = vim.g.dynamic_relnum
-end)
+end, "toggle relative numbers")

@@ -1,34 +1,20 @@
-local wk = require("which-key")
-wk.add({
-{ "<leader>d", desc = "duplicate file" },
-{ "<leader>p", desc = "toggle theme" },
-{ "<leader>u", desc = "open url" },
-{ "<leader>z", desc = "floating terminal" },
-{ "<leader>f", desc = "fzf" },
-{ "<leader>g", desc = "grep" },
-{ "<leader>G", desc = "grep under cursor" },
-{ "<leader>x", desc = "chmod +x" },
-{ "<leader>t", desc = "view files" },
-{ "<leader>R", desc = "reload config" },
-{ "<leader>vs", desc = "vsplit next buf" },
-{ "<leader>w", desc = "write" },
-{ "<leader>W", desc = "toggle wrap" },
-{ "<leader>q", desc = "close buf" },
-{ "<leader>Q", desc = "close buf!" },
-{ "<leader>U", desc = "close ALL buf" },
-{ "<leader>nn", desc = "toggle relative nums" },
-{ "<leader>H", desc = "htop terminal" },
-{ "<leader>T", desc = "git status" },
-{ "<leader>F", desc = "fzf opts" },
-{ "<leader>n", group = "notes" },
-{ "<leader>nf", desc = "find note" },
-{ "<leader>ng", desc = "grep notes" },
-{ "<leader>nd", desc = "daily note" },
-{ "<leader>nw", desc = "new note" },
-{ "<leader>h", group = "git hunk" },
-{ "<leader>s", group = "symbols" },
-{ "<leader>rn", desc = "lsp rename" },
-{ "<leader>ca", desc = "code action" },
-{ "<leader>e", desc = "line diagnostics" },
-{ "<leader>lf", desc = "format buffer" },
+-- only groups and labels that the keymaps themselves can't carry;
+-- every individual mapping now sets its own `desc`, so which-key picks those up
+require("which-key").setup({
+	preset = "helix",
+	win = { border = "rounded" },
+})
+
+require("which-key").add({
+	{ "<leader>f", desc = "find files" },
+	{ "<leader>F", group = "find (more)" },
+	{ "<leader>h", group = "git hunk" },
+	{ "<leader>l", group = "lsp / format" },
+	{ "<leader>n", group = "notes" },
+	{ "<leader>o", group = "file ops" },
+	{ "<leader>b", group = "buffers" },
+	{ "<leader><leader>", desc = "switch buffer" },
+	{ "g", group = "goto" },
+	{ "]", group = "next" },
+	{ "[", group = "prev" },
 })

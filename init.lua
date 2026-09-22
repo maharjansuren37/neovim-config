@@ -1,10 +1,9 @@
 
 local data_dir = vim.fn.stdpath('data')
+local bootstrap = vim.fn.empty(vim.fn.glob(data_dir .. '/site/autoload/plug.vim')) == 1
 
-if vim.fn.empty(vim.fn.glob(data_dir .. '/site/autoload/plug.vim')) == 1 then
+if bootstrap then
     vim.cmd('silent !curl -fLo ' .. data_dir .. '/site/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim')
-
-    vim.cmd('autocmd VimEnter * PlugInstall --sync | source $MYVIMRC')
 end
 
 local vim = vim
@@ -27,18 +26,37 @@ Plug('mfussenegger/nvim-lint') --linting (used by config.autocmd BufWritePost)
 
 vim.call('plug#end')
 
+-- first run: nothing is installed yet, so requiring the plugin modules below
+-- would only produce a wall of "module not found". Install, then re-source.
+if bootstrap then
+    vim.api.nvim_create_autocmd('VimEnter', {
+        once = true,
+        command = 'PlugInstall --sync | source $MYVIMRC',
+    })
+    return
+end
+
 -- initialize core settings first
 require("config.options")
 require("config.mappings")
+require("config.autocmd")
 
--- plugins
-require("plugins.fzf-lua")
-require("plugins.treesitter")
-require("plugins.nvim-tree")
-require("plugins.render-markdown")
-require("plugins.gitsigns")
-require("plugins.blink")
-require("plugins.lsp")
-require("plugins.conform")
-require("plugins.lint")
-require("plugins.which-key")
+-- plugins. pcall so one broken plugin doesn't take the rest of the config
+-- (and its mappings) down with it
+for _, mod in ipairs({
+    "plugins.fzf-lua",
+    "plugins.treesitter",
+    "plugins.nvim-tree",
+    "plugins.render-markdown",
+    "plugins.gitsigns",
+    "plugins.blink",
+    "plugins.lsp",
+    "plugins.conform",
+    "plugins.lint",
+    "plugins.which-key",
+}) do
+    local ok, e = pcall(require, mod)
+    if not ok then
+        vim.notify(mod .. ': ' .. tostring(e), vim.log.levels.WARN)
+    end
+end

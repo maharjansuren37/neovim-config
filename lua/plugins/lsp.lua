@@ -41,6 +41,18 @@ vim.api.nvim_create_autocmd("LspAttach", {
 		map("n", "<leader>ca", function() require("fzf-lua").lsp_code_actions() end, "code action")
 		map("n", "<leader>ss", function() require("fzf-lua").lsp_document_symbols() end, "document symbols")
 		map("n", "<leader>sw", function() require("fzf-lua").lsp_workspace_symbols() end, "workspace symbols")
+
+		-- these groups only exist where a server is attached, so they are
+		-- registered per-buffer instead of showing up empty everywhere
+		local ok, wk = pcall(require, "which-key")
+		if ok then
+			wk.add({
+				buffer = bufnr,
+				{ "<leader>s", group = "symbols" },
+				{ "<leader>c", group = "code" },
+				{ "<leader>r", group = "refactor" },
+			})
+		end
 	end,
 })
 
